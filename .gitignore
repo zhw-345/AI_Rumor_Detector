@@ -1,0 +1,7 @@
+.ruff_cache
+.vscode
+logs/*
+__pycache__
+/data/
+!/src/data/
+results/
