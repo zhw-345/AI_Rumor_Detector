@@ -1,0 +1,13 @@
+# 目前实现的部分与工作
+## RAG系统
+1. EvdienceRAG：建立了三个数据库，包括案例库（Pheme，ISOT，LIAR），知识库（Fever），语言学特征库。并搭建了HyDE到重排序的模块化RAG。LLM使用学校接口，注意API-Key限额。后续只需要修改CNN结果输入即可（该文件末的main函数）。用于解释为什么输入看起来是谣言。
+2. ModelRAG：目前只是AI给出的案例，后续CNN改进完成再做。用于解释为什么CNN把输入判定为谣言。
+3. 注意从AI_RUMOR_DETECTOR文件夹下运行各.py文件。
+4. utils文件夹下包含各数据库的构建代码，暂且就放在那。
+5. 增加输出到logs文件夹下。
+6. 数据库从群里下载，把三个chroma*文件夹放在db文件夹下。
+7. 先整合CNN和EvdienceRAG，优化目录结构，写一个main.py到src文件夹下，注意文件位置修改导致的问题。
+8. 修改一下数据处理，把训练集等放在data下。
+9. 优化目前的CNN，或者你觉得要做的太多了可以交给远翔。
+10. 注意langchain...包安装时会修改torch等包的版本，易造成冲突，最好新开一个环境。
+11. 最后写一下requirements.txt和.gitignore文件。
