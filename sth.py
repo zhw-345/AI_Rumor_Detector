@@ -138,26 +138,27 @@ def evaluate(loader, return_labels=False):
         return acc, f1, rec, trues, preds
     return acc, f1, rec
 
+def train():
 # 训练
-EPOCHS = 20
-best_val_f1 = 0.0
-for epoch in range(EPOCHS):
-    train_loss = train_epoch(train_loader)
-    val_acc, val_f1, val_rec = evaluate(val_loader)
-    print(f"Epoch {epoch+1:02d} | Loss: {train_loss:.4f} | Val Acc: {val_acc:.4f} | Val F1: {val_f1:.4f} | Val Recall: {val_rec:.4f}")
-    if val_f1 > best_val_f1:
-        best_val_f1 = val_f1
-        torch.save(model.state_dict(), 'best_textcnn.pt')
-        print("  -> 保存最佳模型")
+    EPOCHS = 20
+    best_val_f1 = 0.0
+    for epoch in range(EPOCHS):
+        train_loss = train_epoch(train_loader)
+        val_acc, val_f1, val_rec = evaluate(val_loader)
+        print(f"Epoch {epoch+1:02d} | Loss: {train_loss:.4f} | Val Acc: {val_acc:.4f} | Val F1: {val_f1:.4f} | Val Recall: {val_rec:.4f}")
+        if val_f1 > best_val_f1:
+            best_val_f1 = val_f1
+            torch.save(model.state_dict(), 'best_textcnn.pt')
+            print("  -> 保存最佳模型")
 
-# 加载最佳模型并在测试集上评估
-model.load_state_dict(torch.load('best_textcnn.pt'))
-test_acc, test_f1, test_rec, true_labels, pred_labels = evaluate(test_loader, return_labels=True)
-print("\n========== 测试集结果 ==========")
-print(f"准确率 (Accuracy):  {test_acc:.4f}")
-print(f"召回率 (Recall):    {test_rec:.4f}")
-print(f"F1 值:             {test_f1:.4f}")
-print("\n混淆矩阵:")
-print(confusion_matrix(true_labels, pred_labels))
-print("\n分类报告:")
-print(classification_report(true_labels, pred_labels, target_names=['非谣言', '谣言']))
+    # 加载最佳模型并在测试集上评估
+    model.load_state_dict(torch.load('best_textcnn.pt'))
+    test_acc, test_f1, test_rec, true_labels, pred_labels = evaluate(test_loader, return_labels=True)
+    print("\n========== 测试集结果 ==========")
+    print(f"准确率 (Accuracy):  {test_acc:.4f}")
+    print(f"召回率 (Recall):    {test_rec:.4f}")
+    print(f"F1 值:             {test_f1:.4f}")
+    print("\n混淆矩阵:")
+    print(confusion_matrix(true_labels, pred_labels))
+    print("\n分类报告:")
+    print(classification_report(true_labels, pred_labels, target_names=['非谣言', '谣言']))

@@ -4,7 +4,7 @@ import json
 import os
 
 # 设置根目录
-base_dir = r"D:\王远翔 大二下半年课程资料\人工智能导论\6392078\PHEME_veracity\all-rnr-annotated-threads"
+base_dir = "AI_Rumor_Detector"
 output_file = "pheme_faknow.json"
 
 data = []

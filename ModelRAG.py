@@ -424,8 +424,19 @@ class CNNInterpreterRAG:
 if __name__ == "__main__":
     # 假设你已加载 model, vocab, tokenizer
     # model.load_state_dict(torch.load('best_textcnn.pt'))
-    
+    from sth import TextCNN, build_vocab
+    with open('train.json', encoding='utf-8') as f:
+        train_data = json.load(f)
+    with open('val.json', encoding='utf-8') as f:
+        val_data = json.load(f)
+    with open('test.json', encoding='utf-8') as f:
+        test_data = json.load(f)
+
+    vocab = build_vocab(train_data + val_data + test_data, max_vocab=30000, tokenizer=None)
+    model = TextCNN(vocab_size=len(vocab), embedding_dim=128, num_filters=100, filter_sizes=[3,4,5], num_classes=2)
     # 初始化独立 RAG（首次运行需先构建数据库）
+    model.load_state_dict(torch.load('best_textcnn.pt'))
+    print("model loaded")
     model_rag = CNNInterpreterRAG(model, vocab, pattern_db_path="./chroma_cnn_patterns")
     
     # 构建数据库（离线，只需一次）
