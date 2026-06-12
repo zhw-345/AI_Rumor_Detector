@@ -424,7 +424,7 @@ class CNNInterpreterRAG:
 if __name__ == "__main__":
     # 假设你已加载 model, vocab, tokenizer
     # model.load_state_dict(torch.load('best_textcnn.pt'))
-    from sth import TextCNN, build_vocab
+    from AI_Rumor_Detector.src.sth import TextCNN, build_vocab
     with open('train.json', encoding='utf-8') as f:
         train_data = json.load(f)
     with open('val.json', encoding='utf-8') as f:

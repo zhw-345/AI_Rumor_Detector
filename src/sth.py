@@ -52,11 +52,11 @@ def build_vocab(data, max_vocab=30000, tokenizer=None):
 tokenizer = None   # 英文直接用 split
 
 # 加载数据
-with open('train.json', encoding='utf-8') as f:
+with open('./data/train.json', encoding='utf-8') as f:
     train_data = json.load(f)
-with open('val.json', encoding='utf-8') as f:
+with open('./data/val.json', encoding='utf-8') as f:
     val_data = json.load(f)
-with open('test.json', encoding='utf-8') as f:
+with open('./data/test.json', encoding='utf-8') as f:
     test_data = json.load(f)
 
 vocab = build_vocab(train_data + val_data + test_data, max_vocab=30000, tokenizer=tokenizer)
