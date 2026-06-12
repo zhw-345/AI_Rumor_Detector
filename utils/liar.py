@@ -8,7 +8,7 @@ from langchain_chroma import Chroma
 
 # ==================== 配置区 ====================
 LIAR_ROOT = "./data/liar_dataset"      #根目录
-CASE_DB_PATH = "./chroma_pheme_cases"     # 案例库持久化路径
+CASE_DB_PATH = "../db/chroma_pheme_cases"     # 案例库持久化路径
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
 embeddings = HuggingFaceEmbeddings(

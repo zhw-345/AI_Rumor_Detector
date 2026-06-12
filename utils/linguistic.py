@@ -157,7 +157,7 @@ from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 import os
 
-KNOWLEDGE_DB_PATH = "./chroma_linguistic_features"
+KNOWLEDGE_DB_PATH = "../db/chroma_linguistic_features"
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
 # Embedding 初始化

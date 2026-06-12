@@ -8,7 +8,7 @@ from langchain_chroma import Chroma
 
 # ==================== 配置区 ====================
 FEVER_JSONL_PATH = "./data/wiki-pages/train.jsonl"           # FEVER 声明文件
-KNOWLEDGE_DB_PATH = "./chroma_fever_knowledge"     # 知识库持久化路径
+KNOWLEDGE_DB_PATH = "../db/chroma_fever_knowledge"     # 知识库持久化路径
 
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 

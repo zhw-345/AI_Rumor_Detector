@@ -14,7 +14,7 @@ import torch
 
 # ==================== 配置区 ====================
 PHEME_ROOT = "./data/PHEME_veracity/all-rnr-annotated-threads/"      # PHEME 解压后的根目录
-CASE_DB_PATH = "./chroma_pheme_cases"     # 案例库持久化路径
+CASE_DB_PATH = "../db/chroma_pheme_cases"     # 案例库持久化路径
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
 API_KEY = "sk-Th_ZuQs31rz8M72BwOViKw"
