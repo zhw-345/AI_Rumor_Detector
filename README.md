@@ -183,6 +183,8 @@ python ./src/sth.py
 python ./src/EvdienceRAG.py
 ```
 
+> **注意**：申请学校API，使用deepseek模型，6月底过期，此后如需LLM解释器请修改`EvdienceRAG.py`配置。
+
 ---
 
 ##  模型性能
