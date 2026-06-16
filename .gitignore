@@ -1,8 +1,6 @@
 .ruff_cache
 .vscode
-logs/*
 __pycache__
-data/*
 .ipynb_checkpoints
 .ipynb
 db/*
