@@ -7,7 +7,6 @@ from torch.utils.data import Dataset, DataLoader
 from collections import Counter
 from sklearn.metrics import accuracy_score, f1_score, recall_score, confusion_matrix, classification_report
 import numpy as np
-torch.backends.cudnn.enabled = False
 
 # 数据预处理
 class TextDataset(Dataset):
