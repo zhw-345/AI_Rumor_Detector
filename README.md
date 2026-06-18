@@ -31,7 +31,8 @@ AI_Rumor_Detector
 ├─ db                             # 自建向量数据库（需另外下载）
 │  ├─ chroma_fever_knowledge      # FEVER 知识库
 │  ├─ chroma_linguistic_features  # 语言学特征库
-│  └─ chroma_pheme_cases          # Pheme,liar,isot 案例库
+│  ├─ chroma_pheme_cases          # Pheme,liar,isot 案例库
+│  └─ glove.6B.100d.txt           # 预训练向量
 ├─ requirements.txt               # Python 依赖包
 ├─ src                            # 核心源代码
 │  ├─ EvdienceRAG.py              # RAG 证据检索与生成模块
@@ -48,7 +49,7 @@ AI_Rumor_Detector
    └─ pheme.py                    # PHEME 数据集处理
 ```
 
-> **注意**：`db/` 文件夹为自建向量数据库，包含 Chroma 向量库文件，**需要另外下载**。
+> **注意**：`db/` 文件夹为自建向量数据库，包含 Chroma 向量库文件，预训练向量**需要另外下载**。
 >
 >  **下载地址**：[https://pan.sjtu.edu.cn/web/share/b8b12545549c3e9c3b7382abf71338b6](https://pan.sjtu.edu.cn/web/share/b8b12545549c3e9c3b7382abf71338b6)  
 >  **提取码**：`e1kr`
@@ -87,6 +88,7 @@ cd AI_Rumor_Detector
 ```
 AI_Rumor_Detector-rag/
 └─ db/
+   ├─ glove.6B.100d.txt/
    ├─ chroma_fever_knowledge/
    ├─ chroma_linguistic_features/
    └─ chroma_pheme_cases/
@@ -189,6 +191,6 @@ python ./src/EvdienceRAG.py
 
 | 指标              | 数值     |
 | --------------- | ------ |
-| 准确率 (Accuracy)  | 0.8112 |
-| 召回率 (Recall)    | 0.7793 |
-| F1 分数           | 0.7586 |
+| 准确率 (Accuracy)  | 0.8257 |
+| 召回率 (Recall)    | 0.8501 |
+| F1 分数           | 0.7879 |

@@ -1,24 +1,26 @@
 import json
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from collections import Counter
 from sklearn.metrics import accuracy_score, f1_score, recall_score, confusion_matrix, classification_report
 import numpy as np
+torch.backends.cudnn.enabled = False
 
-# ---------------------------- 1. 数据预处理 ----------------------------
+# 数据预处理
 class TextDataset(Dataset):
     def __init__(self, data, vocab, max_len=128, tokenizer=None):
         self.X = [self._text_to_seq(item['text'], vocab, max_len, tokenizer) for item in data]
         self.y = [item['label'] for item in data]
 
-    #预处理，将不同长度的句子转换为一个固定长度的整数序列（这才是神经网络能处理的）
+    #预处理，将不同长度的句子转换为一个固定长度的整数序列
     def _text_to_seq(self, text, vocab, max_len, tokenizer):
         if tokenizer:
             tokens = tokenizer(text)
         else:
-            tokens = text.split()   # 英文用空格
+            tokens = text.split()
         seq = [vocab.get(t, vocab.get('<UNK>', 1)) for t in tokens[:max_len]]
         if len(seq) < max_len:
             seq += [vocab.get('<PAD>', 0)] * (max_len - len(seq))
@@ -46,10 +48,34 @@ def build_vocab(data, max_vocab=30000, tokenizer=None):
     vocab['<UNK>'] = 1
     return vocab
 
+def load_embedding(glove_path, vocab, embedding_dim=200):
+    embeddings = np.random.randn(len(vocab), embedding_dim).astype(np.float32) * 0.01
+    # 特殊token初始化
+    pad_idx = vocab.get('<PAD>', 0)
+    unk_idx = vocab.get('<UNK>', 1)
+    embeddings[pad_idx] = np.zeros(embedding_dim)
+    
+    found = 0
+    with open(glove_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            parts = line.strip().split()
+            word = parts[0]
+            if word in vocab:
+                idx = vocab[word]
+                embeddings[idx] = np.array(parts[1:], dtype=np.float32)
+                found += 1
+    
+    print(f"找到 {found}/{len(vocab)} 个词的预训练向量 ({found/len(vocab)*100:.1f}%)")
+    embedding = nn.Embedding.from_pretrained(
+        torch.FloatTensor(embeddings), 
+        freeze=False,
+        padding_idx=0
+    )
+    return embedding
 # 如果使用中文，引入 jieba
 # import jieba
 # tokenizer = lambda x: list(jieba.cut(x))
-tokenizer = None   # 英文直接用 split
+tokenizer = None
 
 # 加载数据
 with open('./data/train.json', encoding='utf-8') as f:
@@ -62,10 +88,8 @@ with open('./data/test.json', encoding='utf-8') as f:
 vocab = build_vocab(train_data + val_data + test_data, max_vocab=30000, tokenizer=tokenizer)
 print(f"词表大小: {len(vocab)}")
 
-# 超参数
-#句子最大词数
+
 MAX_LEN = 128
-#batch数目
 BATCH_SIZE = 64
 
 train_dataset = TextDataset(train_data, vocab, MAX_LEN, tokenizer)
@@ -76,36 +100,67 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
-# ---------------------------- 2. TextCNN 模型 ----------------------------
+# TextCNN 模型
 class TextCNN(nn.Module):
-    def __init__(self, vocab_size, embedding_dim=128, num_filters=100, filter_sizes=[3,4,5], num_classes=2, dropout=0.5):
-        super(TextCNN, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
+    def __init__(self, vocab, embedding_dim=100, num_filters=128,
+                 filter_sizes=[2,3,4,5], hidden_dim=128, num_classes=2,
+                 dropout=0.5):
+        super().__init__()
+        
+        # 加载预训练向量
+        self.embedding = load_embedding("./db/glove.6B.100d.txt",vocab,100)
+        
         self.convs = nn.ModuleList([
-            nn.Conv2d(1, num_filters, (k, embedding_dim)) for k in filter_sizes
+            nn.Sequential(
+                nn.Conv2d(1, num_filters, (k, embedding_dim)),
+                nn.BatchNorm2d(num_filters),
+                nn.ReLU()
+            ) for k in filter_sizes
         ])
+        
+        # BiGRU
+        cnn_dim = len(filter_sizes) * num_filters
+        self.bigru = nn.GRU(cnn_dim, hidden_dim, batch_first=True, 
+                           bidirectional=True)
+        
+        # 注意力
+        self.attention = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, 1, bias=False)
+        )
+        
         self.dropout = nn.Dropout(dropout)
-        self.fc = nn.Linear(len(filter_sizes) * num_filters, num_classes)
-
+        self.fc = nn.Linear(hidden_dim * 2, num_classes)
+    
     def forward(self, x):
-        # x: (batch, seq_len)
-        emb = self.embedding(x)               # (batch, seq_len, emb_dim)
-        emb = emb.unsqueeze(1)                # (batch, 1, seq_len, emb_dim)
+        emb = self.embedding(x).unsqueeze(1)  # [B, 1, L, D]
+        
+        # CNN多通道
         conv_outs = []
         for conv in self.convs:
-            conv_out = conv(emb)              # (batch, num_filters, seq_len-k+1, 1)
-            conv_out = torch.relu(conv_out.squeeze(3))
-            pooled = torch.max_pool1d(conv_out, conv_out.size(2)).squeeze(2)   # (batch, num_filters)
+            c = conv(emb).squeeze(3)  # [B, num_filters, L-k+1]
+            pooled = F.adaptive_max_pool1d(c, 1).squeeze(2)
             conv_outs.append(pooled)
-        cat = torch.cat(conv_outs, dim=1)      # (batch, len(filter_sizes)*num_filters)
-        cat = self.dropout(cat)
-        return self.fc(cat)
+        
+        cnn_feat = torch.cat(conv_outs, dim=1)  # [B, cnn_dim]
+        
+        # 扩展为序列输入BiGRU
+        seq_feat = cnn_feat.unsqueeze(1).expand(-1, x.size(1), -1)
+        gru_out, _ = self.bigru(seq_feat)  # [B, L, hidden*2]
+        
+        # 注意力加权
+        attn = F.softmax(self.attention(gru_out).squeeze(-1), dim=1)
+        context = torch.bmm(attn.unsqueeze(1), gru_out).squeeze(1)
+        
+        context = self.dropout(context)
+        return self.fc(context)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = TextCNN(vocab_size=len(vocab), embedding_dim=128, num_filters=100, filter_sizes=[3,4,5], num_classes=2).to(device)
+model = TextCNN(vocab, embedding_dim=100, num_filters=100, filter_sizes=[2,3,4,5], num_classes=2).to(device)
 print(model)
 
-# ---------------------------- 3. 训练与评估 ----------------------------
+# 训练与评估
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 

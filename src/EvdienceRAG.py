@@ -15,24 +15,22 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import SystemMessage, HumanMessage
 from sentence_transformers import CrossEncoder
 
-# ==================== 配置区 ====================
+# 配置区
 
 API_KEY = "sk-Th_ZuQs31rz8M72BwOViKw"
 BASE_URL = "https://models.sjtu.edu.cn/api/v1"
 CHAT_MODEL = "deepseek-chat"
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
-TEMPERATURE = 0.3  # 解释任务需要确定性，适当降低
+TEMPERATURE = 0.3
 MAX_TOKENS = 2048
 TIMEOUT = 180
 MAX_RETRIES = 5
 
-# 数据库路径（你的实际路径）
+# 数据库路径
 CASE_DB_PATH = "./db/chroma_pheme_cases"
 KNOWLEDGE_DB_PATH = "./db/chroma_fever_knowledge"
 FEATURE_DB_PATH = "./db/chroma_linguistic_features"
-
-# ==================== 数据结构 ====================
 
 @dataclass
 class DetectionResult:
@@ -49,8 +47,7 @@ class RetrievedEvidence:
     retrieval_score: float
     final_score: float = 0.0
 
-# ==================== 1. 模型加载 ====================
-
+# 模型加载
 embeddings = HuggingFaceEmbeddings(
     model_name=EMBEDDING_MODEL,
     model_kwargs={"device": "cuda" if os.system("nvidia-smi > /dev/null 2>&1") == 0 else "cpu"},
@@ -86,8 +83,7 @@ print("[3/6] 三个向量库加载完成")
 
 cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
-# ==================== 2. 标签映射系统 ====================
-
+# 标签映射系统
 class LabelMapper:
     """
     将 CNN 的 true/false 预测映射到各数据库的 label 体系
@@ -134,7 +130,7 @@ class LabelMapper:
             return label in false_labels
         return False
 
-# ==================== 3. 查询改写器 (Query Rewriter) ====================
+# 询改写器 (Query Rewriter)
 
 class QueryRewriter:
     """
@@ -148,10 +144,10 @@ class QueryRewriter:
         pred = detection.prediction
         features = "quantity/readability/punctuation/emotion/pronoun/congtive_process/specificity/syntactic/inquiry"
         
-        # 1. 主张提取（简化版：取前 300 字符，实际可用 LLM 提取）
+        # 主张提取
         claim = text[:300]
         
-        # 2. HyDE: 生成假设解释文档
+        # HyDE: 生成假设解释文档
         hyde_knowledge_prompt = f"""You are a rumor analysis expert. The following text was classified as {"a RUMOR" if pred == "false" else "TRUE"} by a CNN detector.
 Write a 3-sentence expert analysis explaining what deceptive or verifiable characteristics this text might have.
 
@@ -185,7 +181,7 @@ Generate feature descriptions:"""
             hyde_knowledge_doc = claim  # 降级
             hyde_feature_doc = claim
         
-        # 3. 生成多视角查询
+        # 生成多视角查询
         queries = {
             "case": f"Similar {'rumor' if pred == 'false' else 'non-rumor'} case: {claim}",
             "feature": hyde_feature_doc,
@@ -194,7 +190,7 @@ Generate feature descriptions:"""
         
         return queries
 
-# ==================== 4. 元数据感知检索器 ====================
+# 元数据感知检索器
 
 class MetadataAwareRetriever:
     """
@@ -236,7 +232,7 @@ case_retriever = MetadataAwareRetriever(case_store, "case")
 knowledge_retriever = MetadataAwareRetriever(knowledge_store, "knowledge")
 feature_retriever = MetadataAwareRetriever(feature_store, "feature")
 
-# ==================== 5. RAG-Fusion (RRF) ====================
+# RAG-Fusion (RRF)
 
 class RAGFusion:
     @staticmethod
@@ -261,7 +257,7 @@ class RAGFusion:
         
         return [item["evidence"] for item in sorted_items]
 
-# ==================== 6. 元数据感知重排序 ====================
+# 元数据感知重排序
 
 class MetadataAwareReranker:
     """
@@ -277,7 +273,7 @@ class MetadataAwareReranker:
         query = detection.text
         pred = detection.prediction
         
-        # 1. Cross-Encoder 语义分（如有）
+        # Cross-Encoder 语义分
         if self.cross_encoder and len(candidates) > 0:
             pairs = [(query, ev.doc.page_content) for ev in candidates]
             ce_scores = self.cross_encoder.predict(pairs)
@@ -287,7 +283,7 @@ class MetadataAwareReranker:
             for ev in candidates:
                 ev.final_score = ev.retrieval_score * 0.6
         
-        # 2. 元数据一致性奖励
+        # 元数据一致性奖励
         for ev in candidates:
             bonus = 0.0
             meta = ev.doc.metadata
@@ -319,7 +315,7 @@ class MetadataAwareReranker:
 
 reranker = MetadataAwareReranker(cross_encoder)
 
-# ==================== 7. 上下文格式化 ====================
+# 上下文格式化
 
 class ContextAssembler:
     """
@@ -421,7 +417,7 @@ class ContextAssembler:
         
         return context
 
-# ==================== 8. LLM Prompt 与解释生成 ====================
+# LLM Prompt 与解释生成
 
 EXPLANATION_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an expert Rumor Analysis Assistant. Your task is to explain why a CNN-based detector classified the input text as a rumor or non-rumor, based strictly on the retrieved evidence.
@@ -460,7 +456,7 @@ Output must be a valid JSON object with no markdown formatting."""),
 }}""")
 ])
 
-# ==================== 9. 主 RAG 管线 ====================
+# 主 RAG 管线
 
 class RumorRAGPipeline:
     def __init__(self):
@@ -473,16 +469,16 @@ class RumorRAGPipeline:
         print(f"\n[Pipeline] 处理文本: {detection.text[:60]}...")
         print(f"[Pipeline] CNN 预测: {detection.prediction} (conf={detection.confidence:.4f})")
         
-        # 1. 查询改写
+        # 查询改写
         queries = self.query_rewriter.rewrite(detection)
         print(f"[4/6] 查询改写完成 (HyDE length: {len(queries['hyde_text'])})")
         
-        # 2. 元数据过滤条件
+        # 元数据过滤条件
         case_filter = LabelMapper.to_case_filter(detection.prediction)
         know_filter = LabelMapper.to_knowledge_filter(detection.prediction)
         feat_filter = None  # 特征库不过滤标签
         
-        # 3. 并行检索（三路）
+        # 并行检索（三路）
         case_results = case_retriever.retrieve(
             queries["case"], None, case_filter, top_k=8
         )
@@ -496,7 +492,7 @@ class RumorRAGPipeline:
         
         print(f"[Pipeline] 案例库召回: {len(case_results)} | 知识库: {len(know_results)} | 特征库: {len(feat_results)}")
         
-        # 4. RAG-Fusion (RRF)
+        # RAG-Fusion (RRF)
         fused = self.fusion.reciprocal_rank_fusion({
             "case": case_results,
             "knowledge": know_results,
@@ -504,14 +500,14 @@ class RumorRAGPipeline:
         })
         print(f"[5/6] RRF 融合后: {len(fused)} 条证据")
         
-        # 5. 重排序
+        # 重排序
         top_evidence = self.reranker.rerank(fused, detection, top_n=12)
         print(f"[Pipeline] 重排序后保留: {len(top_evidence)} 条")
         
-        # 6. 上下文组装
+        # 上下文组装
         context = self.assembler.assemble(top_evidence, max_tokens=3500)
         
-        # 7. LLM 生成解释
+        # LLM 生成解释
         prompt_vars = {
             "target_text": detection.text,
             "predicted_label": detection.prediction.upper(),
@@ -534,7 +530,7 @@ class RumorRAGPipeline:
             "token_usage": token_usage
         }
 
-# ==================== 10. 运行入口 ====================
+# 运行入口
 
 def main():
     pipeline = RumorRAGPipeline()
