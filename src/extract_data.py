@@ -4,8 +4,8 @@ import json
 import os
 
 # 设置根目录
-base_dir = "AI_Rumor_Detector"
-output_file = "pheme_faknow.json"
+base_dir = "AI_Rumor_Detector/data"
+output_file = "./data/pheme_faknow.json"
 
 data = []
 
