@@ -51,8 +51,7 @@ AI_Rumor_Detector
 
 > **注意**：`db/` 文件夹为自建向量数据库，包含 Chroma 向量库文件，预训练向量**需要另外下载**。
 >
->  **下载地址**：[https://pan.sjtu.edu.cn/web/share/b8b12545549c3e9c3b7382abf71338b6](https://pan.sjtu.edu.cn/web/share/b8b12545549c3e9c3b7382abf71338b6)  
->  **提取码**：`e1kr`
+>  **下载地址**：[https://pan.sjtu.edu.cn/web/share/fd5cc6c83ed5adffabb5393060d545d5](https://pan.sjtu.edu.cn/web/share/fd5cc6c83ed5adffabb5393060d545d5)  
 
 ---
 
@@ -83,7 +82,7 @@ cd AI_Rumor_Detector
 
 ### 2. 下载数据库文件
 
-访问 [上海交通大学云盘](https://pan.sjtu.edu.cn/web/share/b8b12545549c3e9c3b7382abf71338b6)，使用提取码 `e1kr` 下载 `db/` 文件夹内容，解压后放置到项目根目录下。目录结构应为：
+访问 [上海交通大学云盘](https://pan.sjtu.edu.cn/web/share/fd5cc6c83ed5adffabb5393060d545d5)，下载 `db/` 文件夹内容，解压后放置到项目根目录下。目录结构应为：
 
 ```
 AI_Rumor_Detector-rag/
