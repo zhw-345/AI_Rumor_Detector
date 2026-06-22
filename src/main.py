@@ -40,7 +40,7 @@ def model_init():
         test_data = json.load(f)
 
     vocab = build_vocab(train_data + val_data + test_data, max_vocab=30000, tokenizer=tokenizer)
-    model = TextCNN(vocab_size=len(vocab), embedding_dim=128, num_filters=100, filter_sizes=[3,4,5], num_classes=2)
+    model = TextCNN(vocab=vocab, embedding_dim=100, num_filters=100, filter_sizes=[2,3,4,5], num_classes=2)
     model.load_state_dict(torch.load(CNNPATH, weights_only=False))
     model.eval()
     return model, pipline, vocab
